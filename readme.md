@@ -1,0 +1,3 @@
+ENV Example :
+MIDTRANS_SERVER_KEY = "xXXxxXxxxXxx"
+MIDTRANS_SANDBOX_LINK = "xXXxxXxxxXxx"
