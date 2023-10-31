@@ -10,7 +10,7 @@ import (
 func routeInit() *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/payments", controller.CreatePayment).Methods(http.MethodGet)
+	r.HandleFunc("/payments", controller.CreatePayment).Methods(http.MethodPost)
 
 	return r
 }
