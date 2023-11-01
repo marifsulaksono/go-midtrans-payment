@@ -30,7 +30,7 @@ type PaymentDetail struct {
 	Status      Status    `json:"status"`
 	PaymentType string    `json:"payment_type"`
 	PaymentBank Banks     `json:"payment_bank,omitempty"`
-	Echannel    BillInfo  `json:"ehannel,omitempty"`
+	Echannel    BillInfo  `json:"echannel,omitempty"`
 }
 
 type BillInfo struct {
