@@ -24,14 +24,15 @@ const (
 )
 
 type PaymentDetail struct {
-	OrderID     uuid.UUID `json:"order_id"`
-	Date        time.Time `json:"date"`
-	Total       int       `json:"total"`
-	Status      Status    `json:"status"`
-	PaymentType string    `json:"payment_type"`
-	PaymentBank Banks     `json:"payment_bank,omitempty"`
-	Echannel    BillInfo  `json:"echannel,omitempty"`
-	Store       CStore    `json:"store,omitempty"`
+	OrderID        uuid.UUID       `json:"order_id"`
+	Date           time.Time       `json:"date"`
+	Total          int             `json:"total"`
+	Status         Status          `json:"status"`
+	PaymentType    string          `json:"payment_type"`
+	PaymentBank    Banks           `json:"payment_bank,omitempty"`
+	Echannel       BillInfo        `json:"echannel,omitempty"`
+	Store          CStore          `json:"store,omitempty"`
+	CustomerDetail CostumerDetails `json:"customer_details"`
 }
 
 type BillInfo struct {
