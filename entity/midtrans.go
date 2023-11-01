@@ -7,6 +7,7 @@ type MidtransRequestPayload struct {
 	TransactionDetails OrderDetail  `json:"transaction_details"`
 	BankTransfer       BankTransfer `json:"bank_transfer,omitempty"`
 	Echannel           BillInfo     `json:"echannel,omitempty"`
+	Store              CStore       `json:"cstore,omitempty"`
 }
 
 type OrderDetail struct {

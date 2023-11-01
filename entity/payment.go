@@ -31,9 +31,15 @@ type PaymentDetail struct {
 	PaymentType string    `json:"payment_type"`
 	PaymentBank Banks     `json:"payment_bank,omitempty"`
 	Echannel    BillInfo  `json:"echannel,omitempty"`
+	Store       CStore    `json:"store,omitempty"`
 }
 
 type BillInfo struct {
 	BillInfo1 string `json:"bill_info1"`
 	BillInfo2 string `json:"bill_info2"`
+}
+
+type CStore struct {
+	Store   string `json:"store"`
+	Message string `json:"message,omitempty"`
 }

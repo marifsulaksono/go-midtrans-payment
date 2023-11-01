@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -28,7 +29,10 @@ func CreatePayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Re
 			Bank: payment.PaymentBank,
 		},
 		Echannel: payment.Echannel,
+		Store:    payment.Store,
 	}
+
+	fmt.Println(paymentRequest)
 
 	conf := config.GetPaymentConfig()
 
