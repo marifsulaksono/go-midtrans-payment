@@ -31,6 +31,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(response.StatusCode)
 	w.Write(responseJSON)
 }
