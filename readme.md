@@ -79,3 +79,11 @@ MIDTRANS_SNAP_SANDBOX_LINK = "xXXxxXxxxXxx"
     }
 }
 ```
+
+### Indomaret/Alfamart (Core)
+```sh
+{
+    "total": 50000,
+    "payment_type": "qris"
+}
+```
