@@ -3,13 +3,11 @@ package entity
 import "github.com/google/uuid"
 
 type MidtransRequestPayload struct {
-	PaymentType        string          `json:"payment_type"`
-	TransactionDetails OrderDetail     `json:"transaction_details"`
-	BankTransfer       BankTransfer    `json:"bank_transfer,omitempty"`
-	Echannel           BillInfo        `json:"echannel,omitempty"`
-	Store              CStore          `json:"cstore,omitempty"`
-	CreditCard         Card            `json:"credit_card,omitempty"`
-	CustomerDetail     CostumerDetails `json:"customer_details"`
+	PaymentType        Type         `json:"payment_type"`
+	TransactionDetails OrderDetail  `json:"transaction_details"`
+	BankTransfer       BankTransfer `json:"bank_transfer,omitempty"`
+	Echannel           BillInfo     `json:"echannel,omitempty"`
+	Store              CStore       `json:"cstore,omitempty"`
 }
 
 type OrderDetail struct {
@@ -18,11 +16,18 @@ type OrderDetail struct {
 }
 
 type BankTransfer struct {
-	Bank Banks `json:"bank"`
+	Bank Banks `json:"bank,omitempty"`
+}
+
+type MidtransSnapRequestPayload struct {
+	PaymentType        string          `json:"payment_type"`
+	TransactionDetails OrderDetail     `json:"transaction_details"`
+	CreditCard         Card            `json:"credit_card,omitempty"`
+	CustomerDetail     CostumerDetails `json:"customer_details,omitempty"`
 }
 
 type Card struct {
-	Secure bool `json:"secure"`
+	Secure bool `json:"secure,omitempty"`
 }
 
 type CostumerDetails struct {

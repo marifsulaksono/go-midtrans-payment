@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -18,20 +19,48 @@ func CreatePayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Re
 	payment.Date = time.Now()
 	payment.Status = entity.Waiting
 
-	paymentRequest := entity.MidtransRequestPayload{
-		PaymentType: payment.PaymentType,
-		TransactionDetails: entity.OrderDetail{
-			OrderId:  payment.OrderID,
-			GrossAmt: payment.Total,
-		},
-		// this property will not display is payment type isn't bank transfer (bca/bri/bni/cimb)
-		BankTransfer: entity.BankTransfer{
-			Bank: payment.PaymentBank,
-		},
-		// this property will not display is payment type isn't echannel (Mandiri bill)
-		Echannel: payment.Echannel,
-		// this property will not display is payment type isn't over the counter
-		Store: payment.Store,
+	var paymentRequest entity.MidtransRequestPayload
+
+	// payment type validation
+	if payment.PaymentType == entity.Permata || payment.PaymentType == entity.Gopay || payment.PaymentType == entity.Qris || payment.PaymentType == entity.Alku || payment.PaymentType == entity.Kred {
+		paymentRequest = entity.MidtransRequestPayload{
+			PaymentType: payment.PaymentType,
+			TransactionDetails: entity.OrderDetail{
+				OrderId:  payment.OrderID,
+				GrossAmt: payment.Total,
+			},
+		}
+	} else if payment.PaymentType == entity.Bank {
+		paymentRequest = entity.MidtransRequestPayload{
+			PaymentType: payment.PaymentType,
+			TransactionDetails: entity.OrderDetail{
+				OrderId:  payment.OrderID,
+				GrossAmt: payment.Total,
+			},
+			BankTransfer: entity.BankTransfer{
+				Bank: payment.PaymentBank,
+			},
+		}
+	} else if payment.PaymentType == entity.Mandiri {
+		paymentRequest = entity.MidtransRequestPayload{
+			PaymentType: payment.PaymentType,
+			TransactionDetails: entity.OrderDetail{
+				OrderId:  payment.OrderID,
+				GrossAmt: payment.Total,
+			},
+			Echannel: payment.Echannel,
+		}
+	} else if payment.PaymentType == entity.Store {
+		paymentRequest = entity.MidtransRequestPayload{
+			PaymentType: payment.PaymentType,
+			TransactionDetails: entity.OrderDetail{
+				OrderId:  payment.OrderID,
+				GrossAmt: payment.Total,
+			},
+			Store: payment.Store,
+		}
+	} else {
+		return nil, errors.New("payment type is not allowed")
 	}
 
 	payloadRequest, err := json.Marshal(paymentRequest)
@@ -69,7 +98,7 @@ func CreatePayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Re
 func CreateSnapPayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Response, error) {
 	payment.OrderID = uuid.New()
 
-	paymentRequest := entity.MidtransRequestPayload{
+	paymentRequest := entity.MidtransSnapRequestPayload{
 		TransactionDetails: entity.OrderDetail{
 			OrderId:  payment.OrderID,
 			GrossAmt: payment.Total,
@@ -80,7 +109,7 @@ func CreateSnapPayment(ctx context.Context, payment *entity.PaymentDetail) (*htt
 		CustomerDetail: payment.CustomerDetail,
 	}
 
-	payloadJSON, err := json.Marshal(paymentRequest)
+	payloadRequest, err := json.Marshal(paymentRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +117,7 @@ func CreateSnapPayment(ctx context.Context, payment *entity.PaymentDetail) (*htt
 	conf := config.GetPaymentConfig()
 	authString := base64.StdEncoding.EncodeToString([]byte(conf.ServerKey + ":"))
 
-	request, err := http.NewRequest(http.MethodPost, conf.SnapSandboxLink, bytes.NewBuffer(payloadJSON))
+	request, err := http.NewRequest(http.MethodPost, conf.SnapSandboxLink, bytes.NewBuffer(payloadRequest))
 	if err != nil {
 		return nil, err
 	}
