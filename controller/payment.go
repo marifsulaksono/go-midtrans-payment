@@ -24,22 +24,22 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 
 	var payment entity.PaymentDetail
 	if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
-		log.Println(err.Error())
+		log.Println("JSON Core Payment Error : " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	response, err := service.CreatePayment(ctx, &payment)
 	if err != nil {
-		log.Println(err.Error())
+		log.Printf("Error Create Core Payment : %v", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	responseJSON, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "IO Reader Error : "+err.Error(), http.StatusInternalServerError)
+		log.Printf("IO Core Reader Error : %v", err.Error())
+		http.Error(w, "IO Core Reader Error : "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -60,25 +60,43 @@ func CreateSnapPayment(w http.ResponseWriter, r *http.Request) {
 	defer logger.Close()
 
 	if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
-		log.Println(err.Error())
+		log.Printf("JSON Snap Payment Error : %v", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	response, err := service.CreateSnapPayment(ctx, &payment)
 	if err != nil {
-		log.Println(err.Error())
+		log.Printf("Error Create Snap Payment : %v", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	responseJSON, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "IO Read Error : "+err.Error(), http.StatusInternalServerError)
+		log.Printf("IO Snap Reader Error : %v", err.Error())
+		http.Error(w, "IO Snap Reader Error : "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(response.StatusCode)
 	w.Write(responseJSON)
+}
+
+func WebhookPayment(w http.ResponseWriter, r *http.Request) {
+	logger, err := logger.OpenFileErrorLogger("./logger/notification.log")
+	if err != nil {
+		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer logger.Close()
+
+	var notification interface{}
+	if err := json.NewDecoder(r.Body).Decode(&notification); err != nil {
+		log.Printf("JSON Webhook Error : %v", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("New notification incoming : %v", notification)
 }
