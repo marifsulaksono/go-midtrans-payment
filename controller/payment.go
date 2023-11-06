@@ -11,7 +11,15 @@ import (
 	"github.com/marifsulaksono/go-midtrans-payment/service"
 )
 
-func CreatePayment(w http.ResponseWriter, r *http.Request) {
+type PaymentController struct {
+	Service service.PaymentService
+}
+
+func NewPaymentController(s service.PaymentService) PaymentController {
+	return PaymentController{Service: s}
+}
+
+func (p *PaymentController) CreatePayment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := r.Context()
 
@@ -29,7 +37,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := service.CreatePayment(ctx, &payment)
+	response, err := p.Service.CreatePayment(ctx, &payment)
 	if err != nil {
 		log.Printf("Error Create Core Payment : %v", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -47,7 +55,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseJSON)
 }
 
-func CreateSnapPayment(w http.ResponseWriter, r *http.Request) {
+func (p *PaymentController) CreateSnapPayment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := r.Context()
 	var payment entity.PaymentDetail
@@ -65,7 +73,7 @@ func CreateSnapPayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := service.CreateSnapPayment(ctx, &payment)
+	response, err := p.Service.CreateSnapPayment(ctx, &payment)
 	if err != nil {
 		log.Printf("Error Create Snap Payment : %v", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -83,7 +91,7 @@ func CreateSnapPayment(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseJSON)
 }
 
-func WebhookPayment(w http.ResponseWriter, r *http.Request) {
+func (p *PaymentController) WebhookPayment(w http.ResponseWriter, r *http.Request) {
 	logger, err := logger.OpenFileErrorLogger("./logger/notification.log")
 	if err != nil {
 		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)

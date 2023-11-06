@@ -12,9 +12,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/marifsulaksono/go-midtrans-payment/config"
 	"github.com/marifsulaksono/go-midtrans-payment/entity"
+	"github.com/marifsulaksono/go-midtrans-payment/repository"
 )
 
-func CreatePayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Response, error) {
+type PaymentService struct {
+	Repo repository.PaymentRepository
+}
+
+func NewPaymentService(repo repository.PaymentRepository) PaymentService {
+	return PaymentService{Repo: repo}
+}
+
+func (p *PaymentService) CreatePayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Response, error) {
 	payment.OrderID = uuid.New()
 	payment.Date = time.Now()
 	payment.Status = entity.Waiting
@@ -92,10 +101,17 @@ func CreatePayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Re
 		return nil, err
 	}
 
+	if response.StatusCode == http.StatusOK {
+		err := p.Repo.CreateTransaction(ctx, payment)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return response, nil
 }
 
-func CreateSnapPayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Response, error) {
+func (p *PaymentService) CreateSnapPayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Response, error) {
 	payment.OrderID = uuid.New()
 
 	paymentRequest := entity.MidtransSnapRequestPayload{
@@ -130,6 +146,13 @@ func CreateSnapPayment(ctx context.Context, payment *entity.PaymentDetail) (*htt
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
+	}
+
+	if response.StatusCode == http.StatusOK {
+		err := p.Repo.CreateTransaction(ctx, payment)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return response, nil
