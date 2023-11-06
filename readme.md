@@ -1,13 +1,17 @@
 # About
-Go-midtrans-payment is my implementation of learning about payment gateway on midtrans
+Go-midtrans-payment is implementation of learning about payment gateway on midtrans.
 > [!NOTE]
 > This project is using sandbox link
 
 ## ENV Example :
 ```sh
-MIDTRANS_SERVER_KEY = "xXXxxXxxxXxx"
-MIDTRANS_SANDBOX_LINK = "xXXxxXxxxXxx"
-MIDTRANS_SNAP_SANDBOX_LINK = "xXXxxXxxxXxx"
+MIDTRANS_SERVER_KEY = "SB-Mid-server-xXXxxXxxxXxx"
+MIDTRANS_SANDBOX_LINK = "https://api.sandbox.midtrans.com/v2/charge"
+MIDTRANS_SNAP_SANDBOX_LINK = "https://app.sandbox.midtrans.com/snap/v1/transactions"
+
+MONGODB_USERNAME = "username"
+MONGODB_PASSWORD = "password"
+MONGODB_CLUSTER = "xXXxxXx.xXXxxXx"
 ```
 
 ## API Endpoint
