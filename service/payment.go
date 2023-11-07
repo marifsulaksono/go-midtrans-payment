@@ -157,3 +157,26 @@ func (p *PaymentService) CreateSnapPayment(ctx context.Context, payment *entity.
 
 	return response, nil
 }
+
+func (p *PaymentService) UpdateTransaction(ctx context.Context, id, status string) error {
+	var stts entity.Status
+
+	switch status {
+	case "capture":
+		stts = entity.Success
+	case "settlement":
+		stts = entity.Success
+	case "pending":
+		stts = entity.Waiting
+	case "deny":
+		stts = entity.Cancel
+	case "cancel":
+		stts = entity.Cancel
+	case "failure":
+		stts = entity.Cancel
+	case "expire":
+		stts = entity.Expired
+	}
+
+	return p.Repo.UpdateTransaction(ctx, id, stts)
+}

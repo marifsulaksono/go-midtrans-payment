@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -23,7 +24,8 @@ func (p *PaymentController) CreatePayment(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	ctx := r.Context()
 
-	logger, err := logger.OpenFileErrorLogger("./logger/error.log")
+	// open file logger
+	logger, err := logger.OpenFileErrorLogger("./logger/logger.log")
 	if err != nil {
 		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
 		return
@@ -60,7 +62,8 @@ func (p *PaymentController) CreateSnapPayment(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	var payment entity.PaymentDetail
 
-	logger, err := logger.OpenFileErrorLogger("./logger/error.log")
+	// open file logger
+	logger, err := logger.OpenFileErrorLogger("./logger/logger.log")
 	if err != nil {
 		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
 		return
@@ -92,19 +95,37 @@ func (p *PaymentController) CreateSnapPayment(w http.ResponseWriter, r *http.Req
 }
 
 func (p *PaymentController) WebhookPayment(w http.ResponseWriter, r *http.Request) {
-	logger, err := logger.OpenFileErrorLogger("./logger/notification.log")
+	w.Header().Set("Content-Type", "application/json")
+	ctx := r.Context()
+
+	// open file logger notifcation
+	logger, err := logger.OpenFileErrorLogger("./logger/logger.log")
 	if err != nil {
 		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer logger.Close()
 
-	var notification interface{}
+	var notification map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&notification); err != nil {
 		log.Printf("JSON Webhook Error : %v", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	// logger new notification webhook
 	log.Printf("New notification incoming : %v", notification)
+
+	id := fmt.Sprint(notification["order_id"])
+	status := fmt.Sprint(notification["transaction_status"])
+
+	err = p.Service.UpdateTransaction(ctx, id, status)
+	if err != nil {
+		log.Printf("Error Update Incoming Transaction : %v", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Success update transaction"))
 }

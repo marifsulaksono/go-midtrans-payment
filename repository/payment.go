@@ -3,8 +3,10 @@ package repository
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/marifsulaksono/go-midtrans-payment/entity"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -27,5 +29,24 @@ func (p *PaymentRepository) CreateTransaction(ctx context.Context, payment *enti
 		{Key: "payment_type", Value: payment.PaymentType},
 	})
 
+	return err
+}
+
+func (p *PaymentRepository) UpdateTransaction(ctx context.Context, id string, status entity.Status) error {
+	objId, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{Key: "_id", Value: primitive.Binary{Subtype: 0, Data: objId[:]}}}
+	statusUpdate := bson.D{{Key: "$set", Value: bson.D{{Key: "status", Value: status}}}}
+
+	var trx entity.PaymentDetail
+	err = p.DB.Database(DBName).Collection("transaction").FindOne(ctx, filter).Decode(&trx)
+	if err != nil {
+		return err
+	}
+
+	_, err = p.DB.Database(DBName).Collection("transaction").UpdateOne(ctx, filter, statusUpdate)
 	return err
 }
