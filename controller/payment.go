@@ -25,7 +25,7 @@ func (p *PaymentController) CreatePayment(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 
 	// open file logger
-	logger, err := logger.OpenFileErrorLogger("./logger/logger.log")
+	logger, err := logger.OpenFileLogger("./logger/logger.log")
 	if err != nil {
 		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
 		return
@@ -63,7 +63,7 @@ func (p *PaymentController) CreateSnapPayment(w http.ResponseWriter, r *http.Req
 	var payment entity.PaymentDetail
 
 	// open file logger
-	logger, err := logger.OpenFileErrorLogger("./logger/logger.log")
+	logger, err := logger.OpenFileLogger("./logger/logger.log")
 	if err != nil {
 		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
 		return
@@ -99,7 +99,7 @@ func (p *PaymentController) WebhookPayment(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 
 	// open file logger notifcation
-	logger, err := logger.OpenFileErrorLogger("./logger/logger.log")
+	logger, err := logger.OpenFileLogger("./logger/logger.log")
 	if err != nil {
 		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
 		return
@@ -113,7 +113,7 @@ func (p *PaymentController) WebhookPayment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// logger new notification webhook
+	// log new notification webhook
 	log.Printf("New notification incoming : %v", notification)
 
 	id := fmt.Sprint(notification["order_id"])
