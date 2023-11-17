@@ -43,6 +43,7 @@ type PaymentDetail struct {
 	Echannel       BillInfo        `json:"echannel,omitempty"`
 	Store          CStore          `json:"store,omitempty"`
 	CustomerDetail CostumerDetails `json:"customer_details,omitempty"`
+	ItemDetail     []ItemDetails   `json:"item_details"`
 }
 
 type BillInfo struct {
@@ -53,4 +54,12 @@ type BillInfo struct {
 type CStore struct {
 	Store   string `json:"store,omitempty"`
 	Message string `json:"message,omitempty"`
+}
+
+type ItemDetails struct {
+	Id           string `json:"id"`
+	Name         string `json:"name"`
+	Price        int    `json:"price"`
+	Qty          int    `json:"quantity"`
+	MerchantName string `json:"merchant_name,omitempty"`
 }
