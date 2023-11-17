@@ -8,6 +8,7 @@ import (
 const (
 	MidtransServerKey       = "MIDTRANS_SERVER_KEY"
 	MidtransSandboxLink     = "MIDTRANS_SANDBOX_LINK"
+	MidtransCoreSandboxLink = "MIDTRANS_CORE_SANDBOX_LINK"
 	MidtransSnapSandboxLink = "MIDTRANS_SNAP_SANDBOX_LINK"
 
 	MongoDBUsername = "MONGODB_USERNAME"
@@ -19,6 +20,7 @@ const (
 type PaymentConfig struct {
 	ServerKey       string
 	SandboxLink     string
+	CoreSandboxLink string
 	SnapSandboxLink string
 }
 
@@ -30,6 +32,7 @@ func GetPaymentConfig() *PaymentConfig {
 	return &PaymentConfig{
 		ServerKey:       os.Getenv(MidtransServerKey),
 		SandboxLink:     os.Getenv(MidtransSandboxLink),
+		CoreSandboxLink: os.Getenv(MidtransCoreSandboxLink),
 		SnapSandboxLink: os.Getenv(MidtransSnapSandboxLink),
 	}
 }
