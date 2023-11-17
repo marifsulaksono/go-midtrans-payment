@@ -24,9 +24,10 @@ func (p *PaymentRepository) CreateTransaction(ctx context.Context, payment *enti
 	_, err := p.DB.Database(DBName).Collection("transaction").InsertOne(ctx, bson.D{
 		{Key: "_id", Value: payment.OrderID},
 		{Key: "date", Value: payment.Date},
+		// {Key: "user_id", Value: payment.UserId},
 		{Key: "total", Value: payment.Total},
 		{Key: "status", Value: payment.Status},
-		{Key: "payment_type", Value: payment.PaymentType},
+		{Key: "item_details", Value: payment.ItemDetail},
 	})
 
 	return err

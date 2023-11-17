@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/marifsulaksono/go-midtrans-payment/config"
 	"github.com/marifsulaksono/go-midtrans-payment/entity"
 	"github.com/marifsulaksono/go-midtrans-payment/repository"
+	"github.com/marifsulaksono/go-midtrans-payment/utils/helper"
 )
 
 type PaymentService struct {
@@ -23,54 +25,76 @@ func NewPaymentService(repo repository.PaymentRepository) PaymentService {
 	return PaymentService{Repo: repo}
 }
 
-func (p *PaymentService) CreatePayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Response, error) {
+func (p *PaymentService) CreateNewPayment(ctx context.Context, method string, payment *entity.PaymentDetail) (*http.Response, error) {
 	payment.OrderID = uuid.New()
 	payment.Date = time.Now()
 	payment.Status = entity.Waiting
 
-	var paymentRequest entity.MidtransRequestPayload
+	var (
+		paymentRequest entity.MidtransPayloadRequest
+		cr             = true
+		usage          = 1
+	)
 
-	// payment type validation
-	if payment.PaymentType == entity.Permata || payment.PaymentType == entity.Gopay || payment.PaymentType == entity.Qris || payment.PaymentType == entity.Alku || payment.PaymentType == entity.Kred {
-		paymentRequest = entity.MidtransRequestPayload{
-			PaymentType: payment.PaymentType,
+	// payment validation
+	if method == "link" || method == "snap" {
+		paymentRequest = entity.MidtransPayloadRequest{
 			TransactionDetails: entity.OrderDetail{
 				OrderId:  payment.OrderID,
 				GrossAmt: payment.Total,
+			},
+			CustomerRequired: &cr,
+			Usage:            &usage,
+			Expiry: &entity.ExpiryDetails{
+				Start:    time.Now().Format("2006-01-02 15:04:05 +0700"),
+				Duration: 24,
+				Unit:     "hours",
+			},
+			ItemDetail: payment.ItemDetail,
+			CustomerDetail: entity.CostumerDetails{
+				FirstName: payment.CustomerDetail.FirstName,
+				LastName:  payment.CustomerDetail.LastName,
+				Email:     payment.CustomerDetail.Email,
+				Phone:     payment.CustomerDetail.Phone,
 			},
 		}
-	} else if payment.PaymentType == entity.Bank {
-		paymentRequest = entity.MidtransRequestPayload{
-			PaymentType: payment.PaymentType,
-			TransactionDetails: entity.OrderDetail{
-				OrderId:  payment.OrderID,
-				GrossAmt: payment.Total,
-			},
-			BankTransfer: entity.BankTransfer{
-				Bank: payment.PaymentBank,
-			},
-		}
-	} else if payment.PaymentType == entity.Mandiri {
-		paymentRequest = entity.MidtransRequestPayload{
-			PaymentType: payment.PaymentType,
-			TransactionDetails: entity.OrderDetail{
-				OrderId:  payment.OrderID,
-				GrossAmt: payment.Total,
-			},
-			Echannel: payment.Echannel,
-		}
-	} else if payment.PaymentType == entity.Store {
-		paymentRequest = entity.MidtransRequestPayload{
-			PaymentType: payment.PaymentType,
-			TransactionDetails: entity.OrderDetail{
-				OrderId:  payment.OrderID,
-				GrossAmt: payment.Total,
-			},
-			Store: payment.Store,
+	} else if method == "core" {
+		if helper.IsValidPaymentType(payment.PaymentType) {
+			fmt.Println("core...")
+			paymentRequest = entity.MidtransPayloadRequest{
+				PaymentType: payment.PaymentType,
+				TransactionDetails: entity.OrderDetail{
+					OrderId:  payment.OrderID,
+					GrossAmt: payment.Total,
+				},
+				BankTransfer: entity.BankTransfer{
+					Bank: payment.PaymentBank,
+				},
+				Echannel: entity.BillInfo{
+					BillInfo1: payment.Echannel.BillInfo1,
+					BillInfo2: payment.Echannel.BillInfo2,
+				},
+				Store: entity.CStore{
+					Store:   paymentRequest.Store.Store,
+					Message: paymentRequest.Store.Message,
+				},
+				ItemDetail: payment.ItemDetail,
+				CustomerDetail: entity.CostumerDetails{
+					FirstName: payment.CustomerDetail.FirstName,
+					LastName:  payment.CustomerDetail.LastName,
+					Email:     payment.CustomerDetail.Email,
+					Phone:     payment.CustomerDetail.Phone,
+				},
+			}
+			fmt.Println("done...")
+		} else {
+			return nil, errors.New("payment type is not allowed")
 		}
 	} else {
-		return nil, errors.New("payment type is not allowed")
+		return nil, errors.New("payment method is undefined")
 	}
+
+	fmt.Println(paymentRequest)
 
 	payloadRequest, err := json.Marshal(paymentRequest)
 	if err != nil {
@@ -84,7 +108,18 @@ func (p *PaymentService) CreatePayment(ctx context.Context, payment *entity.Paym
 	authString := base64.StdEncoding.EncodeToString([]byte(conf.ServerKey + ":"))
 
 	// request set-up
-	request, err := http.NewRequest(http.MethodPost, conf.SandboxLink, bytes.NewBuffer(payloadRequest))
+	var link string
+	if method == "core" {
+		link = conf.CoreSandboxLink
+	} else if method == "snap" {
+		link = conf.SnapSandboxLink
+	} else if method == "link" {
+		link = conf.SandboxLink
+	} else {
+		return nil, errors.New("unknown method")
+	}
+	fmt.Println(link)
+	request, err := http.NewRequest(http.MethodPost, link, bytes.NewBuffer(payloadRequest))
 	if err != nil {
 		return nil, err
 	}
@@ -101,54 +136,7 @@ func (p *PaymentService) CreatePayment(ctx context.Context, payment *entity.Paym
 		return nil, err
 	}
 
-	if response.StatusCode == http.StatusOK {
-		err := p.Repo.CreateTransaction(ctx, payment)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return response, nil
-}
-
-func (p *PaymentService) CreateSnapPayment(ctx context.Context, payment *entity.PaymentDetail) (*http.Response, error) {
-	payment.OrderID = uuid.New()
-
-	paymentRequest := entity.MidtransSnapRequestPayload{
-		TransactionDetails: entity.OrderDetail{
-			OrderId:  payment.OrderID,
-			GrossAmt: payment.Total,
-		},
-		CreditCard: entity.Card{
-			Secure: true,
-		},
-		CustomerDetail: payment.CustomerDetail,
-	}
-
-	payloadRequest, err := json.Marshal(paymentRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	conf := config.GetPaymentConfig()
-	authString := base64.StdEncoding.EncodeToString([]byte(conf.ServerKey + ":"))
-
-	request, err := http.NewRequest(http.MethodPost, conf.SnapSandboxLink, bytes.NewBuffer(payloadRequest))
-	if err != nil {
-		return nil, err
-	}
-
-	request.Header.Set("Accept", "application/json")
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Authorization", "Basic "+authString)
-
-	client := http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode == http.StatusOK {
+	if response.StatusCode == http.StatusCreated {
 		err := p.Repo.CreateTransaction(ctx, payment)
 		if err != nil {
 			return nil, err

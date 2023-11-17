@@ -19,6 +19,36 @@ MONGODB_CLUSTER = "xXXxxXx.xXXxxXx"
 - Core Endpoint : ```http://localhost:8080/payments/core```
 
 ## Request Body
+### Payment Link
+```sh
+{
+    "total": 300000,
+    "customer_details":
+    {
+        "first_name": "Muhammad Arif",
+        "last_name": "Sulaksono",
+        "email": "marfs@gmail.com",
+        "phone": "08111222333"
+    },
+    "item_details": [
+        {
+            "id": "tix-101",
+            "name": "Tiket Konsep Dewa",
+            "price": 100000,
+            "quantity": 2,
+            "merchant_name": "popuni"
+        },
+        {
+            "id": "tix-102",
+            "name": "Tiket Konsep Nidji",
+            "price": 100000,
+            "quantity": 1,
+            "merchant_name": "popuni"
+        }
+    ]
+}
+```
+
 ### SNAP
 ```sh
 {
@@ -29,7 +59,16 @@ MONGODB_CLUSTER = "xXXxxXx.xXXxxXx"
         "last_name": "Sulaksono",
         "email": "marfs@gmail.com",
         "phone": "08111222333"
-    }
+    },
+    "item_details": [
+        {
+            "id": "tix-101",
+            "name": "Tiket Konsep Dangdut",
+            "price":50000,
+            "quantity": 1,
+            "merchant_name": "popuni"
+        }
+    ]
 }
 ```
 
