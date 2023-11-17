@@ -17,8 +17,7 @@ func routeInit(conn *mongo.Client) *mux.Router {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/payments/core", paymentController.CreatePayment).Methods(http.MethodPost)
-	r.HandleFunc("/payments/snap", paymentController.CreateSnapPayment).Methods(http.MethodPost)
+	r.HandleFunc("/payments", paymentController.CreateNewPayment).Methods(http.MethodPost)
 	r.HandleFunc("/payments/notification", paymentController.WebhookPayment).Methods(http.MethodPost)
 
 	return r
