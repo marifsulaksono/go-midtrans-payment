@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -60,7 +59,6 @@ func (p *PaymentService) CreateNewPayment(ctx context.Context, method string, pa
 		}
 	} else if method == "core" {
 		if helper.IsValidPaymentType(payment.PaymentType) {
-			fmt.Println("core...")
 			paymentRequest = entity.MidtransPayloadRequest{
 				PaymentType: payment.PaymentType,
 				TransactionDetails: entity.OrderDetail{
@@ -75,8 +73,8 @@ func (p *PaymentService) CreateNewPayment(ctx context.Context, method string, pa
 					BillInfo2: payment.Echannel.BillInfo2,
 				},
 				Store: entity.CStore{
-					Store:   paymentRequest.Store.Store,
-					Message: paymentRequest.Store.Message,
+					Store:   payment.Store.Store,
+					Message: payment.Store.Message,
 				},
 				ItemDetail: payment.ItemDetail,
 				CustomerDetail: entity.CostumerDetails{
@@ -86,15 +84,12 @@ func (p *PaymentService) CreateNewPayment(ctx context.Context, method string, pa
 					Phone:     payment.CustomerDetail.Phone,
 				},
 			}
-			fmt.Println("done...")
 		} else {
 			return nil, errors.New("payment type is not allowed")
 		}
 	} else {
 		return nil, errors.New("payment method is undefined")
 	}
-
-	fmt.Println(paymentRequest)
 
 	payloadRequest, err := json.Marshal(paymentRequest)
 	if err != nil {
@@ -118,7 +113,7 @@ func (p *PaymentService) CreateNewPayment(ctx context.Context, method string, pa
 	} else {
 		return nil, errors.New("unknown method")
 	}
-	fmt.Println(link)
+
 	request, err := http.NewRequest(http.MethodPost, link, bytes.NewBuffer(payloadRequest))
 	if err != nil {
 		return nil, err
