@@ -3,13 +3,13 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 
 	"github.com/marifsulaksono/go-midtrans-payment/entity"
-	"github.com/marifsulaksono/go-midtrans-payment/logger"
 	"github.com/marifsulaksono/go-midtrans-payment/service"
+	"github.com/marifsulaksono/go-midtrans-payment/utils/logger"
+	buildResponse "github.com/marifsulaksono/go-midtrans-payment/utils/response"
 )
 
 type PaymentController struct {
@@ -25,7 +25,7 @@ func (p *PaymentController) CreateNewPayment(w http.ResponseWriter, r *http.Requ
 	m := r.URL.Query().Get("m")
 
 	// open file logger
-	logger, err := logger.OpenFileLogger("./logger/logger.log")
+	logger, err := logger.OpenFileLogger("./utils/logger/logger.log")
 	if err != nil {
 		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
 		return
@@ -46,16 +46,14 @@ func (p *PaymentController) CreateNewPayment(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	responseJSON, err := io.ReadAll(response.Body)
-	if err != nil {
+	var responseJSON interface{}
+	if err := json.NewDecoder(response.Body).Decode(&responseJSON); err != nil {
 		log.Printf("IO Payment Reader Error : %v", err.Error())
 		http.Error(w, "IO Payment Reader Error : "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(response.StatusCode)
-	w.Write(responseJSON)
+	buildResponse.SuccessResponseBuilder(w, 201, responseJSON, "", "Success Create New Payment")
 }
 
 func (p *PaymentController) WebhookPayment(w http.ResponseWriter, r *http.Request) {
