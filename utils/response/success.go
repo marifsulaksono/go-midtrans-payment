@@ -3,17 +3,12 @@ package response
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/marifsulaksono/go-midtrans-payment/utils/domain"
 )
 
-type successModel struct {
-	Status   int         `json:"status_code"`
-	Data     interface{} `json:"data,omitempty"`
-	Metadata interface{} `json:"metadata,omitempty"`
-	Message  string      `json:"message,omitempty"`
-}
-
 func SuccessResponseBuilder(w http.ResponseWriter, statusCode int, data, metadata interface{}, message string) {
-	payload := successModel{
+	payload := domain.SuccessModel{
 		Status:   statusCode,
 		Data:     data,
 		Metadata: metadata,
