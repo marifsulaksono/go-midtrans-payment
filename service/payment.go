@@ -40,7 +40,7 @@ func (p *PaymentService) CreateNewPayment(ctx context.Context, method string, pa
 		paymentRequest = entity.MidtransPayloadRequest{
 			TransactionDetails: entity.OrderDetail{
 				OrderId:  payment.OrderID,
-				GrossAmt: payment.Total,
+				GrossAmt: *payment.Total,
 			},
 			CustomerRequired: &cr,
 			Usage:            &usage,
@@ -63,7 +63,7 @@ func (p *PaymentService) CreateNewPayment(ctx context.Context, method string, pa
 				PaymentType: payment.PaymentType,
 				TransactionDetails: entity.OrderDetail{
 					OrderId:  payment.OrderID,
-					GrossAmt: payment.Total,
+					GrossAmt: *payment.Total,
 				},
 				BankTransfer: entity.BankTransfer{
 					Bank: payment.PaymentBank,
@@ -131,7 +131,8 @@ func (p *PaymentService) CreateNewPayment(ctx context.Context, method string, pa
 		return nil, err
 	}
 
-	if response.StatusCode == http.StatusCreated {
+	// insert payment data if create midtrans transaction success
+	if response.StatusCode == http.StatusOK || response.StatusCode == http.StatusCreated {
 		err := p.Repo.CreateTransaction(ctx, payment)
 		if err != nil {
 			return nil, err

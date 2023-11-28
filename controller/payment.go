@@ -8,6 +8,7 @@ import (
 
 	"github.com/marifsulaksono/go-midtrans-payment/entity"
 	"github.com/marifsulaksono/go-midtrans-payment/service"
+	paymentError "github.com/marifsulaksono/go-midtrans-payment/utils/domain/errorModel"
 	"github.com/marifsulaksono/go-midtrans-payment/utils/logger"
 	buildResponse "github.com/marifsulaksono/go-midtrans-payment/utils/response"
 )
@@ -24,14 +25,6 @@ func (p *PaymentController) CreateNewPayment(w http.ResponseWriter, r *http.Requ
 	ctx := r.Context()
 	m := r.URL.Query().Get("m")
 
-	// open file logger
-	logger, err := logger.OpenFileLogger("./utils/logger/logger.log")
-	if err != nil {
-		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer logger.Close()
-
 	var payment entity.PaymentDetail
 	if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
 		log.Println("JSON Core Payment Error : " + err.Error())
@@ -39,10 +32,28 @@ func (p *PaymentController) CreateNewPayment(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	var (
+		detailError = make(map[string]any)
+	)
+
+	if payment.Total == nil {
+		detailError["total"] = "this field is missing input"
+	}
+
+	if payment.PaymentType == "" {
+		detailError["payment_type"] = "this field is missing input"
+	}
+
+	if len(detailError) > 0 {
+		err := paymentError.ErrCreatePayment.AttachDetail(detailError)
+		buildResponse.ErrorResponseBuilder(w, err)
+		return
+	}
+
 	response, err := p.Service.CreateNewPayment(ctx, m, &payment)
 	if err != nil {
 		log.Printf("Error Create Payment : %v", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		buildResponse.ErrorResponseBuilder(w, err)
 		return
 	}
 
@@ -53,7 +64,8 @@ func (p *PaymentController) CreateNewPayment(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	buildResponse.SuccessResponseBuilder(w, 201, responseJSON, "", "Success Create New Payment")
+	log.Printf("New Payment Created : %v", responseJSON)
+	buildResponse.SuccessResponseBuilder(w, 201, responseJSON, nil, "Success Create New Payment")
 }
 
 func (p *PaymentController) WebhookPayment(w http.ResponseWriter, r *http.Request) {

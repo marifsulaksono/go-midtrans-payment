@@ -7,12 +7,20 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/marifsulaksono/go-midtrans-payment/config"
+	"github.com/marifsulaksono/go-midtrans-payment/utils/logger"
 )
 
 const serverPort = 8080
 
 func main() {
-	err := godotenv.Load()
+	// open file logger
+	logger, err := logger.OpenFileLogger("./utils/logger/logger.log")
+	if err != nil {
+		log.Fatalf("Error load file logger : %v", err)
+	}
+	defer logger.Close()
+
+	err = godotenv.Load()
 	if err != nil {
 		log.Fatalf("Failed to load file .env : %v", err)
 	}

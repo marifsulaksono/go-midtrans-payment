@@ -36,7 +36,7 @@ const (
 type PaymentDetail struct {
 	OrderID        uuid.UUID       `json:"order_id"`
 	Date           time.Time       `json:"date"`
-	Total          int             `json:"total"`
+	Total          *int            `json:"total"`
 	Status         Status          `json:"status"`
 	PaymentType    Type            `json:"payment_type"`
 	PaymentBank    Banks           `json:"payment_bank,omitempty"`
