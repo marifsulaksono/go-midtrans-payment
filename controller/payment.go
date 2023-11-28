@@ -61,7 +61,7 @@ func (p *PaymentController) WebhookPayment(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 
 	// open file logger notifcation
-	logger, err := logger.OpenFileLogger("./logger/logger.log")
+	logger, err := logger.OpenFileLogger("./utils/logger/logger.log")
 	if err != nil {
 		http.Error(w, "Error open log file : "+err.Error(), http.StatusInternalServerError)
 		return
