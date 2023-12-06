@@ -33,6 +33,20 @@ const (
 	Success Status = "success"
 )
 
+type Transaction struct {
+	Id          uuid.UUID `json:"transaction_id"`
+	UserId      int       `json:"user_id"`
+	Total       int       `json:"total"`
+	Status      Status    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	PaymentType string    `json:"payment_type"`
+	PaymentUrl  string    `json:"payment_url,omitempty"`
+	PaymentId   string    `json:"payment_id,omitempty"`
+	// PaymentVA   any         `json:"va_number"`
+	PaymentTime time.Time     `json:"payment_time"`
+	ItemDetail  []ItemDetails `json:"item_details"`
+}
+
 type PaymentDetail struct {
 	OrderID        uuid.UUID       `json:"order_id"`
 	Date           time.Time       `json:"date"`

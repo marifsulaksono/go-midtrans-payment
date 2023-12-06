@@ -1,19 +1,14 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/marifsulaksono/go-midtrans-payment/config"
 	"github.com/marifsulaksono/go-midtrans-payment/entity"
 	"github.com/marifsulaksono/go-midtrans-payment/repository"
-	"github.com/marifsulaksono/go-midtrans-payment/utils/helper"
 )
 
 type PaymentService struct {
@@ -24,118 +19,115 @@ func NewPaymentService(repo repository.PaymentRepository) PaymentService {
 	return PaymentService{Repo: repo}
 }
 
-func (p *PaymentService) CreateNewPayment(ctx context.Context, method string, payment *entity.PaymentDetail) (*http.Response, error) {
+func (p *PaymentService) CreateLinkPaymentMidtrans(ctx context.Context, payment *entity.PaymentDetail) (entity.PaymentLinkResponse, error) {
+	// UserId := ctx.Value("user_id").(int)
+	UserId := 1
 	payment.OrderID = uuid.New()
-	payment.Date = time.Now()
-	payment.Status = entity.Waiting
 
-	var (
-		paymentRequest entity.MidtransPayloadRequest
-		cr             = true
-		usage          = 1
-	)
-
-	// payment validation
-	if method == "link" || method == "snap" {
-		paymentRequest = entity.MidtransPayloadRequest{
-			TransactionDetails: entity.OrderDetail{
-				OrderId:  payment.OrderID,
-				GrossAmt: *payment.Total,
-			},
-			CustomerRequired: &cr,
-			Usage:            &usage,
-			Expiry: &entity.ExpiryDetails{
-				Start:    time.Now().Format("2006-01-02 15:04:05 +0700"),
-				Duration: 24,
-				Unit:     "hours",
-			},
-			ItemDetail: payment.ItemDetail,
-			CustomerDetail: entity.CostumerDetails{
-				FirstName: payment.CustomerDetail.FirstName,
-				LastName:  payment.CustomerDetail.LastName,
-				Email:     payment.CustomerDetail.Email,
-				Phone:     payment.CustomerDetail.Phone,
-			},
-		}
-	} else if method == "core" {
-		if helper.IsValidPaymentType(payment.PaymentType) {
-			paymentRequest = entity.MidtransPayloadRequest{
-				PaymentType: payment.PaymentType,
-				TransactionDetails: entity.OrderDetail{
-					OrderId:  payment.OrderID,
-					GrossAmt: *payment.Total,
-				},
-				BankTransfer: entity.BankTransfer{
-					Bank: payment.PaymentBank,
-				},
-				Echannel: entity.BillInfo{
-					BillInfo1: payment.Echannel.BillInfo1,
-					BillInfo2: payment.Echannel.BillInfo2,
-				},
-				Store: entity.CStore{
-					Store:   payment.Store.Store,
-					Message: payment.Store.Message,
-				},
-				ItemDetail: payment.ItemDetail,
-				CustomerDetail: entity.CostumerDetails{
-					FirstName: payment.CustomerDetail.FirstName,
-					LastName:  payment.CustomerDetail.LastName,
-					Email:     payment.CustomerDetail.Email,
-					Phone:     payment.CustomerDetail.Phone,
-				},
-			}
-		} else {
-			return nil, errors.New("payment type is not allowed")
-		}
-	} else {
-		return nil, errors.New("payment method is undefined")
-	}
-
-	payloadRequest, err := json.Marshal(paymentRequest)
+	paymentRequest, err := PayloadRequestMidtransBuilder("link", payment)
 	if err != nil {
-		return nil, err
+		return entity.PaymentLinkResponse{}, err
 	}
 
-	// get the midtrans configuration
-	conf := config.GetPaymentConfig()
-
-	// encode server key to base64
-	authString := base64.StdEncoding.EncodeToString([]byte(conf.ServerKey + ":"))
-
-	// request set-up
-	var link string
-	if method == "core" {
-		link = conf.CoreSandboxLink
-	} else if method == "snap" {
-		link = conf.SnapSandboxLink
-	} else if method == "link" {
-		link = conf.SandboxLink
-	} else {
-		return nil, errors.New("unknown method")
-	}
-
-	request, err := http.NewRequest(http.MethodPost, link, bytes.NewBuffer(payloadRequest))
+	response, err := p.Repo.CreateLinkPaymentMidtrans(ctx, &paymentRequest)
 	if err != nil {
-		return nil, err
-	}
-
-	// header set-up
-	request.Header.Set("Accept", "application/json")
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Authorization", "Basic "+authString)
-
-	// hit midtrans API enpoint with the prepared request
-	client := http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return nil, err
+		return entity.PaymentLinkResponse{}, err
 	}
 
 	// insert payment data if create midtrans transaction success
-	if response.StatusCode == http.StatusOK || response.StatusCode == http.StatusCreated {
-		err := p.Repo.CreateTransaction(ctx, payment)
+	if response.Status == http.StatusOK || response.Status == http.StatusCreated {
+		log.Printf("New Link Payment Created : %v", response)
+		transaction := entity.Transaction{
+			Id:          payment.OrderID,
+			UserId:      UserId,
+			Total:       *payment.Total,
+			Status:      entity.Waiting,
+			CreatedAt:   time.Now(),
+			PaymentType: "payment-link",
+			PaymentUrl:  response.PaymentUrl,
+			ItemDetail:  payment.ItemDetail,
+		}
+
+		err := p.Repo.CreateTransaction(ctx, &transaction)
 		if err != nil {
-			return nil, err
+			return entity.PaymentLinkResponse{}, err
+		}
+	}
+
+	return response, nil
+}
+
+func (p *PaymentService) CreateSnapPaymentMidtrans(ctx context.Context, payment *entity.PaymentDetail) (entity.PaymentSnapResponse, error) {
+	// UserId := ctx.Value("user_id").(int)
+	UserId := 1
+	payment.OrderID = uuid.New()
+
+	paymentRequest, err := PayloadRequestMidtransBuilder("snap", payment)
+	if err != nil {
+		return entity.PaymentSnapResponse{}, err
+	}
+
+	response, err := p.Repo.CreateSnapPaymentMidtrans(ctx, &paymentRequest)
+	if err != nil {
+		return entity.PaymentSnapResponse{}, err
+	}
+
+	// insert payment data if create midtrans transaction success
+	if response.Status == http.StatusOK || response.Status == http.StatusCreated {
+		log.Printf("New Snap Payment Created : %v", response)
+		transaction := entity.Transaction{
+			Id:          payment.OrderID,
+			UserId:      UserId,
+			Total:       *payment.Total,
+			Status:      entity.Waiting,
+			CreatedAt:   time.Now(),
+			PaymentType: "snap-payment",
+			PaymentUrl:  response.PaymentUrl,
+			ItemDetail:  payment.ItemDetail,
+		}
+
+		err := p.Repo.CreateTransaction(ctx, &transaction)
+		if err != nil {
+			return entity.PaymentSnapResponse{}, err
+		}
+	}
+
+	return response, nil
+}
+
+func (p *PaymentService) CreateCorePaymentMidtrans(ctx context.Context, payment *entity.PaymentDetail) (entity.PaymentCoreResponse, error) {
+	// UserId := ctx.Value("user_id").(int)
+	UserId := 1
+	payment.OrderID = uuid.New()
+
+	paymentRequest, err := PayloadRequestMidtransBuilder("core", payment)
+	if err != nil {
+		return entity.PaymentCoreResponse{}, err
+	}
+
+	response, err := p.Repo.CreateCorePaymentMidtrans(ctx, &paymentRequest)
+	if err != nil {
+		return entity.PaymentCoreResponse{}, err
+	}
+
+	// insert payment data if create midtrans transaction success
+	if response.Status == http.StatusOK || response.Status == http.StatusCreated {
+		log.Printf("New Core Payment Created : %v", response)
+		transaction := entity.Transaction{
+			Id:          payment.OrderID,
+			UserId:      UserId,
+			Total:       *payment.Total,
+			Status:      entity.Waiting,
+			CreatedAt:   time.Now(),
+			PaymentType: string(payment.PaymentType),
+			PaymentId:   response.PaymentId,
+			ItemDetail:  payment.ItemDetail,
+			// PaymentUrl:  response.VANumber,
+		}
+
+		err := p.Repo.CreateTransaction(ctx, &transaction)
+		if err != nil {
+			return entity.PaymentCoreResponse{}, err
 		}
 	}
 

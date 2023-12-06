@@ -5,16 +5,16 @@ import (
 )
 
 type MidtransPayloadRequest struct {
-	PaymentType        Type            `json:"payment_type"`
-	TransactionDetails OrderDetail     `json:"transaction_details"`
-	BankTransfer       BankTransfer    `json:"bank_transfer,omitempty"`
-	Echannel           BillInfo        `json:"echannel,omitempty"`
-	Store              CStore          `json:"cstore,omitempty"`
-	CustomerRequired   *bool           `json:"customer_required,omitempty"`
-	Usage              *int            `json:"usage_limit,omitempty"`
-	Expiry             *ExpiryDetails  `json:"expiry,omitempty"`
-	ItemDetail         []ItemDetails   `json:"item_details,omitempty"`
-	CustomerDetail     CostumerDetails `json:"customer_details,omitempty"`
+	PaymentType        Type             `json:"payment_type"`
+	TransactionDetails OrderDetail      `json:"transaction_details"`
+	BankTransfer       BankTransfer     `json:"bank_transfer,omitempty"`
+	Echannel           BillInfo         `json:"echannel,omitempty"`
+	Store              CStore           `json:"cstore,omitempty"`
+	CustomerRequired   *bool            `json:"customer_required,omitempty"`
+	Usage              *int             `json:"usage_limit,omitempty"`
+	Expiry             *ExpiryDetails   `json:"expiry,omitempty"`
+	CustomerDetail     *CostumerDetails `json:"customer_details,omitempty"`
+	ItemDetail         []ItemDetails    `json:"item_details,omitempty"`
 }
 
 type OrderDetail struct {

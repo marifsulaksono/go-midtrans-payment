@@ -8,7 +8,6 @@ import (
 
 	"github.com/marifsulaksono/go-midtrans-payment/entity"
 	"github.com/marifsulaksono/go-midtrans-payment/service"
-	paymentError "github.com/marifsulaksono/go-midtrans-payment/utils/domain/errorModel"
 	"github.com/marifsulaksono/go-midtrans-payment/utils/logger"
 	buildResponse "github.com/marifsulaksono/go-midtrans-payment/utils/response"
 )
@@ -21,9 +20,8 @@ func NewPaymentController(s service.PaymentService) PaymentController {
 	return PaymentController{Service: s}
 }
 
-func (p *PaymentController) CreateNewPayment(w http.ResponseWriter, r *http.Request) {
+func (p *PaymentController) CreateLinkPaymentMidtrans(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	m := r.URL.Query().Get("m")
 
 	var payment entity.PaymentDetail
 	if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
@@ -32,40 +30,69 @@ func (p *PaymentController) CreateNewPayment(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var (
-		detailError = make(map[string]any)
-	)
-
-	if payment.Total == nil {
-		detailError["total"] = "this field is missing input"
-	}
-
-	if payment.PaymentType == "" {
-		detailError["payment_type"] = "this field is missing input"
-	}
-
-	if len(detailError) > 0 {
-		err := paymentError.ErrCreatePayment.AttachDetail(detailError)
-		buildResponse.ErrorResponseBuilder(w, err)
-		return
-	}
-
-	response, err := p.Service.CreateNewPayment(ctx, m, &payment)
+	response, err := p.Service.CreateLinkPaymentMidtrans(ctx, &payment)
 	if err != nil {
 		log.Printf("Error Create Payment : %v", err.Error())
 		buildResponse.ErrorResponseBuilder(w, err)
 		return
 	}
 
-	var responseJSON interface{}
-	if err := json.NewDecoder(response.Body).Decode(&responseJSON); err != nil {
-		log.Printf("IO Payment Reader Error : %v", err.Error())
-		http.Error(w, "IO Payment Reader Error : "+err.Error(), http.StatusInternalServerError)
+	if response.Status == http.StatusOK || response.Status == http.StatusCreated {
+		buildResponse.SuccessResponseBuilder(w, http.StatusCreated, response, nil, "Success Create New Payment")
 		return
 	}
 
-	log.Printf("New Payment Created : %v", responseJSON)
-	buildResponse.SuccessResponseBuilder(w, 201, responseJSON, nil, "Success Create New Payment")
+	buildResponse.SuccessResponseBuilder(w, response.Status, response, nil, "Failed Create Payment")
+}
+
+func (p *PaymentController) CreateSnapPaymentMidtrans(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var payment entity.PaymentDetail
+	if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
+		log.Println("JSON Core Payment Error : " + err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	response, err := p.Service.CreateSnapPaymentMidtrans(ctx, &payment)
+	if err != nil {
+		log.Printf("Error Create Payment : %v", err.Error())
+		buildResponse.ErrorResponseBuilder(w, err)
+		return
+	}
+
+	if response.Status == http.StatusOK || response.Status == http.StatusCreated {
+		buildResponse.SuccessResponseBuilder(w, http.StatusCreated, response, nil, "Success Create New Payment")
+		return
+	}
+
+	buildResponse.SuccessResponseBuilder(w, response.Status, response, nil, "Failed Create Payment")
+}
+
+func (p *PaymentController) CreateCorePaymentMidtrans(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var payment entity.PaymentDetail
+	if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
+		log.Println("JSON Core Payment Error : " + err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	response, err := p.Service.CreateCorePaymentMidtrans(ctx, &payment)
+	if err != nil {
+		log.Printf("Error Create Payment : %v", err.Error())
+		buildResponse.ErrorResponseBuilder(w, err)
+		return
+	}
+
+	if response.Status == http.StatusOK || response.Status == http.StatusCreated {
+		buildResponse.SuccessResponseBuilder(w, http.StatusCreated, response, nil, "Success Create New Payment")
+		return
+	}
+
+	buildResponse.SuccessResponseBuilder(w, response.Status, response, nil, "Failed Create Payment")
 }
 
 func (p *PaymentController) WebhookPayment(w http.ResponseWriter, r *http.Request) {
