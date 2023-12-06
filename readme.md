@@ -15,6 +15,7 @@ MONGODB_CLUSTER = "xXXxxXx.xXXxxXx"
 ```
 
 ## API Endpoint
+- Payment Link Endpoint : ```http://localhost:8080/payments/link```
 - Snap Endpoint : ```http://localhost:8080/payments/snap```
 - Core Endpoint : ```http://localhost:8080/payments/core```
 
